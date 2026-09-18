@@ -29,8 +29,8 @@
  * [증상]
  *   행 루프가 `i <= ROWS` 로 도는 바람에 행이 하나 더 생성된다.
  *   그 행의 인덱스는 idx = SIZE + j 가 되어 스택 배열의 끝을 넘어 쓴다.
- *   스택 카나리(스매싱 보호)가 훼손되어 main 반환 시 "stack smashing detected"
- *   로 SIGABRT. 삼각 인덱싱 산술에 가려 off-by-one 이 눈에 잘 안 띈다.
+ *   스택 카나리(스매싱 보호)가 훼손되어 main 반환 시 "stack smashing detected" 로 SIGABRT. 
+ *   삼각 인덱싱 산술에 가려 off-by-one 이 눈에 잘 안 띈다.
  *
  * [gdb 로 잡기]
  *   make gdb NAME=02_stack_buffer_overflow
@@ -63,7 +63,7 @@ static int tri_index(int i, int j) {
 
 /* 파스칼의 삼각형을 tri[] 에 채운다. */
 static void build_pascal(int *tri, int rows) {
-    for (int i = 0; i <= rows; i++) {
+    for (int i = 0; i < rows; i++) {
         for (int j = 0; j <= i; j++) {
             int idx = tri_index(i, j);
             if (j == 0 || j == i) {

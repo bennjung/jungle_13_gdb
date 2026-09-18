@@ -2,20 +2,20 @@
  * Challenge 01 — Use After Free (심화: vtable 기반 위젯 시스템)
  *
  * [시나리오]
- *   아주 작은 GUI 흉내. 각 위젯(Widget)은 힙 객체이며 첫 멤버로 "vtable"
- *   (render/on_event 함수 포인터 묶음)을 가진다. Screen 은 위젯 포인터 배열을
- *   들고 있고, 이벤트를 나눠준 뒤(dispatch) 한 프레임을 그린다(render).
+ *   아주 작은 GUI 흉내. 
+ *   각 위젯(Widget)은 힙 객체이며 첫 멤버로 "vtable" (render/on_event 함수 포인터 묶음)을 가진다.
+ *   Screen 은 위젯 포인터 배열을 들고 있고, 이벤트를 나눠준 뒤(dispatch) 한 프레임을 그린다(render).
+ *   
  *
  * [기대 동작]
- *   버튼/라벨/다이얼로그를 그리고, 닫기 이벤트 후 남은 위젯만 다시 그린 뒤
- *   정상 종료(0).
+ *   버튼/라벨/다이얼로그를 그리고, 닫기 이벤트 후 남은 위젯만 다시 그린 뒤 정상 종료(0).
+ *   
  *
  * [증상]
- *   닫기 이벤트 핸들러가 다이얼로그 위젯을 free() 하지만, Screen 의 포인터 배열에서
- *   그 슬롯을 제거(NULL 로)하지 않는다. 그 사이 앱이 상태 메시지 버퍼를 새로 할당하며
- *   방금 해제된 청크를 재사용해 vtable 포인터 자리를 덮어쓴다.
- *   다음 렌더 패스에서 해제된 위젯의 w->vtbl->render 를 호출 → 망가진 함수 포인터로
- *   점프 → SIGSEGV. 크래시는 render 루프에서 나지만, 원인은 멀리 떨어진 close 핸들러다.
+ *   닫기 이벤트 핸들러가 다이얼로그 위젯을 free() 하지만, Screen 의 포인터 배열에서 그 슬롯을 제거(NULL 로)하지 않는다. 
+ *   그 사이 앱이 상태 메시지 버퍼를 새로 할당하며 방금 해제된 청크를 재사용해 vtable 포인터 자리를 덮어쓴다.
+ *   다음 렌더 패스에서 해제된 위젯의 w->vtbl->render 를 호출 → 망가진 함수 포인터로 점프 → SIGSEGV. 
+ *   크래시는 render 루프에서 나지만, 원인은 멀리 떨어진 close 핸들러다.
  *
  * [gdb 로 잡기]
  *   make gdb NAME=01_use_after_free
@@ -44,11 +44,13 @@
 
 typedef struct Widget Widget;
 
+// VTable 구조체 
 typedef struct {
     void (*render)(Widget *self);
     void (*on_event)(Widget *self, int code);
 } VTable;
 
+// widget 구조체 
 struct Widget {
     const VTable *vtbl; 
     int id;
@@ -57,6 +59,7 @@ struct Widget {
 };
 
 #define MAX_WIDGETS 8
+// Screen 구조체 widget 배열을 담음 
 typedef struct {
     Widget *items[MAX_WIDGETS];
     int count;
@@ -82,6 +85,7 @@ static const VTable BUTTON_VT = { button_render, widget_noop_event };
 static const VTable LABEL_VT  = { label_render,  widget_noop_event };
 static const VTable DIALOG_VT = { dialog_render, dialog_on_event  };
 
+// Init widget 
 static Widget *widget_new(const VTable *vt, int id, const char *label) {
 
     /* [Thinking Point]
@@ -90,6 +94,7 @@ static Widget *widget_new(const VTable *vt, int id, const char *label) {
     *          → *w 의 타입(Widget)만 필요할 뿐, w 를 실제로 따라가지 않는다.
     *   tip 2. 그래서 sizeof *w 는 (VLA 제외) 컴파일 타임에 sizeof(Widget) 상수로 치환된다.
     *   생각해보기: sizeof(Widget) 대신 sizeof *w 로 쓰면 어떤 장점이 있을까?
+    *   ㄴ> C발 이게 뭔 소리야 , 역참조가 타입만 가져온다는것까지 ㅇㅋ, 근데 왜 이렇게 하는데 
     */
     Widget *w = malloc(sizeof *w);
     if (!w) { perror("malloc"); exit(1); }
@@ -114,20 +119,28 @@ static void screen_dispatch(Screen *s, int code) {
     for (int i = 0; i < s->count; i++) {
         Widget *w = s->items[i];
         w->vtbl->on_event(w, code);
+        // 이게 왜 답인가? 
+        if(w->closed){
+            free(s->items[i]);
+            s->items[i] = NULL;
+        }
     }
 }
+
+
 
 static void screen_render(Screen *s) {
     for (int i = 0; i < s->count; i++) {
         Widget *w = s->items[i];
-        w->vtbl->render(w);      
+        if (w) w->vtbl->render(w);      
     }
 }
+
 
 static void dialog_on_event(Widget *self, int code) {
     if (code == 1) {
         self->closed = 1;
-        widget_destroy(self);   
+        //widget_destroy(self);
     }
 }
 
