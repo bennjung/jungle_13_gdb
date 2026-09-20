@@ -7,8 +7,8 @@
  *   (별칭, aliasing). 조회/출력 후 프로그램 끝에서 전부 정리한다.
  *
  * [왜 directory_sort_by_id 는 없나? (혼동 주의)]
- *   - 이 챌린지의 핵심은 "정렬"이 아니라 "두 인덱스가 같은 객체를 공유(별칭)해서
- *     생기는 이중 해제"다. 그 대비를 보여주려면 한쪽(by_name)만 재배치하면 충분하다.
+ *   - 이 챌린지의 핵심은 "정렬"이 아니라 "두 인덱스가 같은 객체를 공유(별칭)해서 생기는 이중 해제"다. 
+ *     그 대비를 보여주려면 한쪽(by_name)만 재배치하면 충분하다.
  *   - by_id 는 삽입 순서 그대로 두는 "소유(owning) 인덱스" 역할이라 정렬이 필요 없다.
  *     (find_by_id 도 선형 탐색이라 정렬돼 있지 않아도 동작한다)
  *   - 따라서 by_id 는 실제로 "id 오름차순"이 아니라 삽입 순서일 뿐이며,
@@ -55,6 +55,7 @@ typedef struct {
     int  count;
 } Directory;
 
+// 레코드(REC) 구조체 초기화 <- directory_add
 static Rec *rec_new(int id, const char *name) {
     Rec *r = malloc(sizeof *r);
     if (!r) { perror("malloc"); exit(1); }
@@ -104,9 +105,11 @@ static void directory_free(Directory *d) {
         free(d->by_id[i]->name);
         free(d->by_id[i]);                 
     }
-    for (int i = 0; i < d->count; i++) {
-        free(d->by_name[i]);               
-    }
+    // 위에서 프리해줬으니.. 당연(?)히 안되는게 정상아닌가? 
+    // 구조체안의 두 local variables 같은 주소를 가르키고있으니, 뭐.. 
+    // for (int i = 0; i < d->count; i++) {
+    //     free(d->by_name[i]);               
+    // }
     d->count = 0;
 }
 

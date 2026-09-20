@@ -58,15 +58,26 @@ static void list_init(IntList *l) {
     l->data = malloc(l->cap * sizeof(int));
     if (!l->data) { perror("malloc"); exit(1); }
 }
-
+ 
 static void list_ensure(IntList *l, size_t need) {
     if (need <= l->cap) return;
 
-    size_t newcap = l->cap ? l->cap * 2 : 8;
+    // size_t newcap = l->cap ? l->cap * 2 : 8;
+    size_t newcap = l->cap * 2;
+    printf("current cap %zu\n", l->cap);
+    printf("current newcap %zu\n", newcap);
     while (newcap < need) newcap *= 2;
-
-    int *p = realloc(l->data, l->cap * sizeof(int));
-    if (!p) { perror("realloc"); free(l->data); exit(1); }
+    // if (newcap > 214748364){
+    //     long *p = realloc(l->data, l->cap * sizeof(long));
+    // }
+    // buffer ? 
+    // IntList* buffer = l;
+    int *p = realloc(l->data, l->cap * sizeof(newcap)); // aborted 
+    if (!p) { 
+        perror("realloc"); 
+        free(l->data); 
+        exit(1); 
+    }
 
     l->data = p;
     l->cap  = newcap;

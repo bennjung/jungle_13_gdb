@@ -42,16 +42,21 @@ typedef struct {
     int n;
 } Config;
 
+// Init config
 static void cfg_set(Config *c, const char *k, const char *v) {
-    if (c->n < MAX_KV) { c->keys[c->n] = k; c->vals[c->n] = v; c->n++; }
+    if (c->n < MAX_KV) { 
+        c->keys[c->n] = k; 
+        c->vals[c->n] = v; 
+        c->n++; 
+    }
 }
-
+// 해쉬 테이블에서 key 에 맞는 value 리턴 
 static const char *cfg_get(const Config *c, const char *k) {
     for (int i = 0; i < c->n; i++)
         if (strcmp(c->keys[i], k) == 0) return c->vals[i];
     return NULL;                       /* 없는 키 → NULL */
 }
-
+// 
 static void expand(const Config *c, const char *tmpl, char *out, size_t outcap) {
     size_t o = 0;
     for (const char *p = tmpl; *p; ) {
@@ -59,14 +64,24 @@ static void expand(const Config *c, const char *tmpl, char *out, size_t outcap) 
             const char *end = strchr(p, '}');
             if (!end) break;
             char key[32];
-            size_t kl = (size_t)(end - (p + 2));
+            size_t kl = (size_t)(end - (p + 2)); // 이게 뭐냐 ? 
             if (kl >= sizeof key) kl = sizeof key - 1;
             memcpy(key, p + 2, kl);
             key[kl] = '\0';
 
-            const char *v = cfg_get(c, key);      
-            size_t vl = strlen(v);                 
-            if (o + vl < outcap) { memcpy(out + o, v, vl); o += vl; }
+            const char *v = cfg_get(c, key);
+            // printf("v values :%s", v);
+            size_t vl; // 키가 없으면? 
+            if (v == NULL){
+                p = end + 1;
+                continue;
+            } // continue
+            vl = strlen(v);   
+            // 이 라인 분석해보자... 
+            if (o + vl < outcap) { 
+                memcpy(out + o, v, vl); 
+                o += vl; 
+            }
             p = end + 1;
         } else {
             if (o + 1 < outcap) out[o++] = *p;
