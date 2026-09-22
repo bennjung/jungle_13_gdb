@@ -115,7 +115,11 @@ int main(void) {
      *   tip 2. 만약 그냥 "Config cfg;" 로만 뒀다면 지역 변수라 n·keys·vals 가 쓰레기 값이다.
      *   생각해보기: n 이 쓰레기 값이면 cfg_set/cfg_get 에서 무슨 일이 벌어질까?
      *               */
-    Config cfg = { .n = 0 };
+    // 이건 됨
+    // Config cfg = {};
+    // 이건 안됨
+    Config cfg;
+    //Config cfg = {.n=0};
     cfg_set(&cfg, "host", "example.com");
     cfg_set(&cfg, "port", "8080");
 

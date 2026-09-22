@@ -39,16 +39,20 @@ typedef struct {
     char *vals[MAX_HEADERS];
     int   count;
 } Headers;
-
+// 공백 제거
 static char *skip_ws(char *s) {
     while (*s == ' ' || *s == '\t') s++;
     return s;
 }
-
+// divider(':') 기준으로 문자열 짜르기 
 static void parse_headers(char *text, Headers *h) {
     for (char *line = strtok(text, "\n"); line != NULL; line = strtok(NULL, "\n")) {
+        // ":" 찾기 
         char *colon = strchr(line, ':');   
-
+        if (!colon) continue;
+            
+        
+        // 문자열 끝으로 설정(?)
         *colon = '\0';                    
         char *key = line;
         char *val = skip_ws(colon + 1);
