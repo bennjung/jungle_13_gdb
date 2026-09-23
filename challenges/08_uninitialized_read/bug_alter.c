@@ -74,34 +74,18 @@ static void dirty_heap(void) {
 }
 
 static int **make_matrix(void) {
-    // scratch에 의해 뭔가 쓰레기값을 물려받음..
+    // [SOLVE -3]
+    int **shld = malloc(ROWS * sizeof(int *));
     int **nr = malloc(ROWS * sizeof(int *));
-    // [Debug] test
-    // for (int r = 0; r < ROWS; r++) {
-    //     printf("Trash nr addr: %p\n", nr[r]);
-    // }
-    // 지역 배열로 하면? 안됨 스택 프레임 끝날때 메모리 헤제됨(배열 뒤짐).
-    // nr 배열안 원소 주솟값 초기화
-    for (int i = 0; i < ROWS; i++) nr[i] = NULL;
     
+
     if (!nr) { perror("malloc"); exit(1); }
-    // 의문인건 왜 짝수행만..? 
-    // [SOLVE -1]
     for (int i = 0; i < ROWS; i+=2) {
         int *r = malloc(COLS * sizeof(int));
         for (int j = 0; j < COLS; j++) r[j] = i * COLS + j;
         nr[i] = r;
     }
-    // [SOLVE -2]
-    // for (int i = 0; i < ROWS; i++) {
-    //     int *r = malloc(COLS * sizeof(int));
-    //     if (i % 2 == 0){
-    //         for (int j = 0; j < COLS; j++) r[j] = i * COLS + j;
-    //     }
-    //     nr[i] = r;
-    // }
-
-
+    
     // [Debug] Matrix Print
     // for (int r = 0; r < ROWS; r+=2) {
         // printf("row first addr: %p\n", nr[r]);
@@ -113,13 +97,13 @@ static int **make_matrix(void) {
         
     // }
 
-
+    free(shld);
     return nr;
 }
 
 static long row_sum(int **rows, int nrows) {
     long total = 0;
-    // 할당된것들만 필터 ()
+    // 할당된것들만 필터? 
     for (int i = 0; i < nrows; i++) {
         if (rows[i] != NULL){
             for (int j = 0; j < COLS; j++) {
@@ -137,7 +121,6 @@ int main(void) {
     int **rows = make_matrix();
     printf("summing %dx%d matrix...\n", ROWS, COLS);
     // printf("rows %d", rows[0][0]); // [DEBUG]
-    printf("matrix %d", *(rows[0]));
     long s = row_sum(rows, ROWS);     
 
     printf("sum = %ld\n", s);

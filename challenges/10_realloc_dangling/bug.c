@@ -48,44 +48,72 @@ typedef struct {
     int    undo_n;
 } EditBuffer;
 
+// 버퍼 초기화
 static void eb_init(EditBuffer *e) {
     e->cap = 4;
     e->len = 0;
     e->undo_n = 0;
     e->data = malloc(e->cap * sizeof(int));
     if (!e->data) { perror("malloc"); exit(1); }
-    /* data 바로 뒤에 놓이는 별도 할당. data 가 힙 맨 끝(top)이 아니게 되어
-       이후 realloc 이 제자리 확장 대신 '이동'을 택하게 만든다(→ 옛 블록 해제). */
+    // data 바로 뒤에 놓이는 별도 할당. 
+    // data 가 힙 맨 끝(top)이 아니게 되어 이후 realloc 이 제자리 확장 대신 '이동'을 택하게 만든다(→ 옛 블록 해제)
     e->clipboard = malloc(e->cap * sizeof(int));
     if (!e->clipboard) { perror("malloc"); exit(1); }
 }
-
+// 스냅샷? 
 static void eb_snapshot(EditBuffer *e) {
-    if (e->undo_n < MAX_UNDO) e->undo[e->undo_n++] = e->data;
+    // 맥스 : 8 
+    if (e->undo_n < MAX_UNDO) 
+        e->undo[e->undo_n++] = e->data;
 }
-
+// 버퍼 사이즈 2배로 
 static void eb_grow(EditBuffer *e, size_t need) {
     size_t nc = e->cap;
+    
     while (nc < need) nc *= 2;
+    // realloc(free)전 유효 메모리 포인터 만들기
+    int *temp = malloc(e->cap * sizeof(int));
+    memcpy(temp, e->data,e->cap * sizeof(int));
     int *p = realloc(e->data, nc * sizeof(int));   
     if (!p) { perror("realloc"); free(e->data); exit(1); }
-    e->data = p;                                   
+    
+    // [Debug] print 
+    // int idx = 0;
+    // while (idx < nc){
+        // printf("idx val : %d\n", p[idx]);
+        // idx++;
+    // }
+
+    e->data = p;     
+    e->undo[e->undo_n-1] = temp;
+    // memcpy( e->undo[e->undo_n-1], p, nc * sizeof(int) );
     e->cap = nc;
 }
-
+// 버퍼 데이터 추가 
 static void eb_push(EditBuffer *e, int v) {
-    if (e->len == e->cap) eb_grow(e, e->len + 1);
+    if (e->len == e->cap) 
+        eb_grow(e, e->len + 1);
     e->data[e->len++] = v;
 }
-
+// 메모리 해제 
 static void eb_free(EditBuffer *e) {
     free(e->data);
     free(e->clipboard);
+    
+    // 여기서 이슈가? double free를 했다고? 
+    // e->undo[] 가 왜 드랍 되었는지를 찾아야함. 
+    // [Debug]
+    // printf("Data addr : %p\n", e->data);
+    // printf("Data val : %d\n", *(e->data));
+
     for (int i = 0; i < e->undo_n; i++) {
-        free(e->undo[i]);           
+        printf("free undo addr : %p\n", e->undo[i]);
+        if (e->undo[i] != NULL)
+            free(e->undo[i]);           
     }
-    e->undo_n = 0;
     e->data = NULL;
+    e->undo_n = 0;
+    
 }
 
 int main(void) {
@@ -97,6 +125,10 @@ int main(void) {
     eb_snapshot(&e);                 
 
     for (int i = 0; i < 4000; i++) eb_push(&e, i);     
+    
+    //[Debug] check e->undo status
+    // printf("e_undo addr :%p | ", e.undo);
+    // printf("e_undo val :%d \n", *(e.undo[0]));
 
     printf("len=%zu cap=%zu head=%d tail=%d\n",
            e.len, e.cap, e.data[0], e.data[e.len - 1]);

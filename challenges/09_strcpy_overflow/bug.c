@@ -36,21 +36,25 @@
 #include <string.h>
 
 /* 필요한 총 바이트 수 = 모든 조각 길이 합 + 종료 문자 1 */
+// 문자열 길이 카운팅
 static size_t joined_size(const char *const *parts, int n) {
     size_t total = 1;                        /* '\0' 자리 */
-    for (int i = 0; i < n - 1; i++) {        
+    for (int i = 0; i < n ; i++) {        // n-1;
         total += strlen(parts[i]);
     }
     return total;
 }
-
+// concat 함수 
 static char *join(const char *const *parts, int n) {
     size_t need = joined_size(parts, n);
+    
+    // printf("parts : %s , len : %zu\n", *(parts), need );
     char *out = malloc(need);                /* 마지막 조각 길이만큼 부족하게 할당됨 */
     if (!out) { perror("malloc"); exit(1); }
-
+    
     size_t off = 0;
     for (int i = 0; i < n; i++) {            /* 복사는 마지막 조각까지 전부 → 오버플로 */
+        // out 은 문자열 정확히는 ADDR, off는 size_t인디..? 
         strcpy(out + off, parts[i]);
         off += strlen(parts[i]);
     }
@@ -66,6 +70,7 @@ int main(void) {
 
     const char *parts[] = { "GET ", "/index.html", " HTTP/1.1\r\n\r\n", body };
     int n = (int)(sizeof(parts) / sizeof(parts[0]));
+    // printf("init len %d\n", n);
 
     char *msg = join(parts, n);              /* 복사 중 힙 오버플로 → 크래시 */
 
